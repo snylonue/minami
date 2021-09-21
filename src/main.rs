@@ -1,9 +1,11 @@
+mod screenshot;
+
 use iced::{
     button, executor, qr_code, text_input, window, Align, Application, Column, Command, Container,
     Error, Length, QRCode, Settings, Text,
 };
 use image::{DynamicImage, ImageBuffer};
-use scrap::{Capturer, Display};
+use quircs::Quirc;
 
 #[derive(Debug, Default)]
 struct Minami {
@@ -52,24 +54,15 @@ impl Application for Minami {
             Message::Scan => {
                 return Command::perform(
                     async {
-                        let mut capturer = Capturer::new(Display::primary().unwrap()).unwrap();
-                        let (width, height) = (capturer.width() as u32, capturer.height() as u32);
-                        let buffer = loop {
-                            match capturer.frame() {
-                                Ok(frame) => break frame,
-                                Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => continue,
-                                Err(_) => panic!("failed to get a screenshot"),
-                            }
-                        };
+                        let mut capturer = screenshot::Screenshot::new().unwrap();
+                        let (width, height) = capturer.capturer_size();
+                        // blocks the whole code, maybe use a async method instaed
+                        let buffer = capturer.capture().unwrap();
                         let screenshot =
-                            ImageBuffer::from_raw(width, height, buffer.to_vec()).unwrap();
+                            ImageBuffer::from_raw(width as u32, height as u32, buffer).unwrap();
                         let screenshot = DynamicImage::ImageBgra8(screenshot);
-                        let mut quirc = quircs::Quirc::new();
-                        let mut codes = quirc.identify(
-                            capturer.width(),
-                            capturer.height(),
-                            &screenshot.into_luma8(),
-                        );
+                        let mut quirc = Quirc::new();
+                        let mut codes = quirc.identify(width, height, &screenshot.into_luma8());
                         let code = codes.next().unwrap().unwrap().decode().unwrap();
                         String::from_utf8(code.payload).unwrap()
                     },
