@@ -7,19 +7,40 @@ use iced::{
 use image::{DynamicImage, ImageBuffer};
 use quircs::Quirc;
 
+#[derive(Debug)]
+enum State {
+    Display,
+    Scanning,
+    ScanFailed,
+}
+
 #[derive(Debug, Default)]
 struct Minami {
     data: String,
     input: text_input::State,
     qr_code: Option<qr_code::State>,
     scan: button::State,
+    state: State,
 }
 
 #[derive(Debug, Clone)]
 enum Message {
     DataChanged(String),
     Scan,
+    ScanFailed,
     Clear,
+}
+
+impl State {
+    #[allow(unused)]
+    fn is_fail(&self) -> bool {
+        matches!(self, Self::ScanFailed)
+    }
+}
+impl Default for State {
+    fn default() -> Self {
+        Self::Display
+    }
 }
 
 impl Application for Minami {
@@ -44,6 +65,7 @@ impl Application for Minami {
     ) -> Command<Self::Message> {
         match message {
             Message::DataChanged(data) => {
+                self.state = State::Display;
                 if data.is_empty() {
                     self.qr_code = None;
                 } else {
@@ -52,6 +74,7 @@ impl Application for Minami {
                 self.data = data;
             }
             Message::Scan => {
+                self.state = State::Scanning;
                 return Command::perform(
                     async {
                         let mut capturer = screenshot::Screenshot::new().unwrap();
@@ -61,13 +84,16 @@ impl Application for Minami {
                         let screenshot =
                             ImageBuffer::from_raw(width as u32, height as u32, buffer).unwrap();
                         let screenshot = DynamicImage::ImageBgra8(screenshot);
-                        let mut quirc = Quirc::new();
-                        let mut codes = quirc.identify(width, height, &screenshot.into_luma8());
-                        let code = codes.next().unwrap().unwrap().decode().unwrap();
-                        String::from_utf8(code.payload).unwrap()
+                        scan_image(screenshot)
                     },
-                    |data| Message::DataChanged(data),
+                    |data| match data {
+                        Some(data) => Message::DataChanged(data),
+                        None => Message::ScanFailed,
+                    },
                 );
+            },
+            Message::ScanFailed => {
+                self.state = State::ScanFailed;
             }
             Message::Clear => {
                 self.qr_code = None;
@@ -108,6 +134,14 @@ impl Application for Minami {
             .center_y()
             .into()
     }
+}
+
+fn scan_image(img: DynamicImage) -> Option<String> {
+    let img = img.into_luma8();
+    let mut decorder = Quirc::new();
+    let mut codes = decorder.identify(img.width() as usize, img.height() as usize, &img);
+    let code = codes.next()?.ok()?.decode().ok()?;
+    String::from_utf8(code.payload).ok()
 }
 
 fn main() -> Result<(), Error> {
