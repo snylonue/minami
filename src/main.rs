@@ -31,12 +31,6 @@ enum Message {
     Clear,
 }
 
-impl State {
-    #[allow(unused)]
-    fn is_fail(&self) -> bool {
-        matches!(self, Self::ScanFailed)
-    }
-}
 impl Default for State {
     fn default() -> Self {
         Self::Display
@@ -91,7 +85,7 @@ impl Application for Minami {
                         None => Message::ScanFailed,
                     },
                 );
-            },
+            }
             Message::ScanFailed => {
                 self.state = State::ScanFailed;
             }
@@ -104,28 +98,48 @@ impl Application for Minami {
     }
 
     fn view(&mut self) -> iced::Element<'_, Self::Message> {
-        let input = text_input::TextInput::new(
-            &mut self.input,
-            "Data input",
-            &self.data,
-            Message::DataChanged,
-        )
-        .size(30)
-        .padding(15);
-        let scan_or_clear = if self.data.is_empty() {
-            button::Button::new(&mut self.scan, Text::new("scan")).on_press(Message::Scan)
-        } else {
-            button::Button::new(&mut self.scan, Text::new("clear")).on_press(Message::Clear)
-        };
         let mut content = Column::new()
             .width(Length::Units(700))
             .spacing(20)
-            .align_items(Align::Center)
-            .push(input)
-            .push(scan_or_clear);
-        if let Some(qr) = self.qr_code.as_mut() {
-            content = content.push(QRCode::new(qr).cell_size(10));
-        }
+            .align_items(Align::Center);
+        match self.state {
+            State::Display => {
+                let input = text_input::TextInput::new(
+                    &mut self.input,
+                    "Data input",
+                    &self.data,
+                    Message::DataChanged,
+                )
+                .size(30)
+                .padding(15);
+                let scan_or_clear = if self.data.is_empty() {
+                    button::Button::new(&mut self.scan, Text::new("scan")).on_press(Message::Scan)
+                } else {
+                    button::Button::new(&mut self.scan, Text::new("clear")).on_press(Message::Clear)
+                };
+                content = content.push(input).push(scan_or_clear);
+                if let Some(qr) = self.qr_code.as_mut() {
+                    content = content.push(QRCode::new(qr).cell_size(10));
+                }
+            }
+            State::Scanning => {
+                content = content.push(Text::new("Scanning"));
+            }
+            State::ScanFailed => {
+                let input = text_input::TextInput::new(
+                    &mut self.input,
+                    "Data input",
+                    &self.data,
+                    Message::DataChanged,
+                )
+                .size(30)
+                .padding(15);
+                let msg = Text::new("Failed to recognize qr code");
+                let scan =
+                    button::Button::new(&mut self.scan, Text::new("scan")).on_press(Message::Scan);
+                content = content.push(input).push(scan).push(msg);
+            }
+        };
         Container::new(content)
             .width(Length::Fill)
             .height(Length::Fill)
