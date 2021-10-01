@@ -1,8 +1,8 @@
 mod screenshot;
 
 use iced::{
-    button, executor, qr_code, text_input, window, Align, Application, Column, Command, Container,
-    Error, Length, QRCode, Settings, Text,
+    button, executor, qr_code, text_input, Align, Application, Column, Command, Container, Error,
+    Length, QRCode, Settings, Text,
 };
 use image::{DynamicImage, ImageBuffer};
 use quircs::Quirc;
@@ -102,7 +102,7 @@ impl Application for Minami {
             .width(Length::Units(700))
             .spacing(20)
             .align_items(Align::Center);
-        match self.state {
+        let content = match self.state {
             State::Display => {
                 let input = text_input::TextInput::new(
                     &mut self.input,
@@ -121,10 +121,9 @@ impl Application for Minami {
                 if let Some(qr) = self.qr_code.as_mut() {
                     content = content.push(QRCode::new(qr).cell_size(10));
                 }
+                content
             }
-            State::Scanning => {
-                content = content.push(Text::new("Scanning"));
-            }
+            State::Scanning => content.push(Text::new("Scanning")),
             State::ScanFailed => {
                 let input = text_input::TextInput::new(
                     &mut self.input,
@@ -137,7 +136,7 @@ impl Application for Minami {
                 let msg = Text::new("Failed to recognize qr code");
                 let scan =
                     button::Button::new(&mut self.scan, Text::new("scan")).on_press(Message::Scan);
-                content = content.push(input).push(scan).push(msg);
+                content.push(input).push(scan).push(msg)
             }
         };
         Container::new(content)
@@ -159,11 +158,5 @@ fn scan_image(img: DynamicImage) -> Option<String> {
 }
 
 fn main() -> Result<(), Error> {
-    Minami::run(Settings {
-        window: window::Settings {
-            transparent: true,
-            ..Default::default()
-        },
-        ..Default::default()
-    })
+    Minami::run(Settings::default())
 }
