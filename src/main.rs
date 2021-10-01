@@ -1,8 +1,8 @@
 mod screenshot;
 
 use iced::{
-    button, executor, qr_code, text_input, Align, Application, Column, Command, Container, Error,
-    Length, QRCode, Settings, Text,
+    button, executor, qr_code, text_input, window, Align, Application, Column, Command, Container,
+    Error, Length, QRCode, Settings, Text,
 };
 use image::{DynamicImage, ImageBuffer};
 use quircs::Quirc;
@@ -106,7 +106,7 @@ impl Application for Minami {
             State::Display => {
                 let input = text_input::TextInput::new(
                     &mut self.input,
-                    "Data input",
+                    "",
                     &self.data,
                     Message::DataChanged,
                 )
@@ -142,9 +142,9 @@ impl Application for Minami {
         Container::new(content)
             .width(Length::Fill)
             .height(Length::Fill)
-            .padding(20)
+            .padding(32)
             .center_x()
-            .center_y()
+            .align_y(Align::Start)
             .into()
     }
 }
@@ -158,5 +158,11 @@ fn scan_image(img: DynamicImage) -> Option<String> {
 }
 
 fn main() -> Result<(), Error> {
-    Minami::run(Settings::default())
+    Minami::run(Settings {
+        window: window::Settings {
+            size: (480, 640),
+            ..Default::default()
+        },
+        ..Default::default()
+    })
 }
