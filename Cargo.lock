@@ -1733,7 +1733,6 @@ dependencies = [
  "image",
  "quircs",
  "scrap",
- "smol",
 ]
 
 [[package]]

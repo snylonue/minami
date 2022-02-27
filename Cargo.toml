@@ -10,4 +10,3 @@ iced = { version = "0.3", features = ["qr_code", "smol"] }
 image = "0.23"
 quircs = "0.10"
 scrap = "0.5"
-smol = "1.2"
