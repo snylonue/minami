@@ -1,6 +1,7 @@
 #![windows_subsystem = "windows"]
 
 mod screenshot;
+mod style;
 
 use iced::{
     button, executor, qr_code, text_input, window, Align, Application, Column, Command, Container,
@@ -118,7 +119,8 @@ impl Application for Minami {
                     button::Button::new(&mut self.scan, Text::new("scan")).on_press(Message::Scan)
                 } else {
                     button::Button::new(&mut self.scan, Text::new("clear")).on_press(Message::Clear)
-                };
+                }
+                .style(style::Button);
                 content = content.push(input).push(scan_or_clear);
                 if let Some(qr) = self.qr_code.as_mut() {
                     content = content.push(QRCode::new(qr).cell_size(10));
@@ -136,8 +138,9 @@ impl Application for Minami {
                 .size(30)
                 .padding(15);
                 let msg = Text::new("Failed to recognize qr code");
-                let scan =
-                    button::Button::new(&mut self.scan, Text::new("scan")).on_press(Message::Scan);
+                let scan = button::Button::new(&mut self.scan, Text::new("scan"))
+                    .on_press(Message::Scan)
+                    .style(style::Button);
                 content.push(input).push(scan).push(msg)
             }
         };
