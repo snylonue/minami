@@ -74,10 +74,10 @@ impl Application for Minami {
                 self.state = State::Scanning;
                 return Command::perform(
                     async {
-                        let mut capturer = screenshot::Screenshot::new().unwrap();
+                        let capturer = screenshot::Screenshot::new().unwrap();
                         let (width, height) = capturer.capturer_size();
                         // blocks the whole code, maybe use a async method instaed
-                        let buffer = capturer.capture().unwrap();
+                        let buffer = capturer.await.unwrap();
                         let screenshot =
                             ImageBuffer::from_raw(width as u32, height as u32, buffer).unwrap();
                         let screenshot = DynamicImage::ImageBgra8(screenshot);
