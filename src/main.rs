@@ -1,4 +1,4 @@
-#![windows_subsystem = "windows"]
+#![cfg_attr(debug_assertion, windows_subsystem = "windows")]
 
 mod screenshot;
 mod style;
