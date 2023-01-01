@@ -20,18 +20,20 @@ impl Screenshot {
 impl Future for Screenshot {
     type Output = Result<Vec<u8>, std::io::Error>;
 
-    fn poll(mut self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Self::Output> {
+    fn poll(
+        mut self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+    ) -> Poll<Self::Output> {
         match self.capturer.frame() {
             Ok(frame) => Poll::Ready(Ok(frame.to_vec())), // sometimes returns an empty frame
             Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
                 cx.waker().wake_by_ref();
                 Poll::Pending
-            },
+            }
             Err(e) => Poll::Ready(Err(e)),
         }
     }
 }
-
 
 /// SAFETY: remain to be proven
 unsafe impl Send for Screenshot {}

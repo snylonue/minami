@@ -1,11 +1,12 @@
 #![cfg_attr(debug_assertion, windows_subsystem = "windows")]
 
 mod screenshot;
-mod style;
+// mod style;
 
 use iced::{
-    button, executor, qr_code, text_input, window, Align, Application, Column, Command, Container,
-    Error, Length, QRCode, Settings, Text,
+    executor, widget::button, widget::qr_code, widget::text_input, widget::Column,
+    widget::Container, widget::QRCode, widget::Text, window, Alignment, Application, Command,
+    Error, Length, Settings, Theme,
 };
 use image::{DynamicImage, ImageBuffer};
 use quircs::Quirc;
@@ -20,9 +21,7 @@ enum State {
 #[derive(Debug, Default)]
 struct Minami {
     data: String,
-    input: text_input::State,
     qr_code: Option<qr_code::State>,
-    scan: button::State,
     state: State,
 }
 
@@ -45,6 +44,8 @@ impl Application for Minami {
 
     type Message = Message;
 
+    type Theme = Theme;
+
     type Flags = ();
 
     fn new(_flags: Self::Flags) -> (Self, Command<Self::Message>) {
@@ -55,11 +56,7 @@ impl Application for Minami {
         String::from("Minami")
     }
 
-    fn update(
-        &mut self,
-        message: Self::Message,
-        _clipboard: &mut iced::Clipboard,
-    ) -> Command<Self::Message> {
+    fn update(&mut self, message: Self::Message) -> Command<Self::Message> {
         match message {
             Message::DataChanged(data) => {
                 self.state = State::Display;
@@ -94,53 +91,40 @@ impl Application for Minami {
             }
             Message::Clear => {
                 self.qr_code = None;
-                self.data = String::new();
+                self.data.clear();
             }
         }
         Command::none()
     }
 
-    fn view(&mut self) -> iced::Element<'_, Self::Message> {
+    fn view(&self) -> iced::Element<'_, Self::Message> {
         let mut content = Column::new()
             .width(Length::Units(700))
             .spacing(20)
-            .align_items(Align::Center);
+            .align_items(Alignment::Center);
         let content = match self.state {
             State::Display => {
-                let input = text_input::TextInput::new(
-                    &mut self.input,
-                    "",
-                    &self.data,
-                    Message::DataChanged,
-                )
-                .size(30)
-                .padding(15);
+                let input = text_input::TextInput::new("content", &self.data, Message::DataChanged)
+                    .size(30)
+                    .padding(15);
                 let scan_or_clear = if self.data.is_empty() {
-                    button::Button::new(&mut self.scan, Text::new("scan")).on_press(Message::Scan)
+                    button::Button::new(Text::new("scan")).on_press(Message::Scan)
                 } else {
-                    button::Button::new(&mut self.scan, Text::new("clear")).on_press(Message::Clear)
-                }
-                .style(style::Button);
+                    button::Button::new(Text::new("clear")).on_press(Message::Clear)
+                };
                 content = content.push(input).push(scan_or_clear);
-                if let Some(qr) = self.qr_code.as_mut() {
+                if let Some(qr) = self.qr_code.as_ref() {
                     content = content.push(QRCode::new(qr).cell_size(10));
                 }
                 content
             }
             State::Scanning => content.push(Text::new("Scanning")),
             State::ScanFailed => {
-                let input = text_input::TextInput::new(
-                    &mut self.input,
-                    "Data input",
-                    &self.data,
-                    Message::DataChanged,
-                )
-                .size(30)
-                .padding(15);
+                let input = text_input::TextInput::new("content", &self.data, Message::DataChanged)
+                    .size(30)
+                    .padding(15);
                 let msg = Text::new("Failed to recognize qr code");
-                let scan = button::Button::new(&mut self.scan, Text::new("scan"))
-                    .on_press(Message::Scan)
-                    .style(style::Button);
+                let scan = button::Button::new(Text::new("scan")).on_press(Message::Scan);
                 content.push(input).push(scan).push(msg)
             }
         };
@@ -149,7 +133,7 @@ impl Application for Minami {
             .height(Length::Fill)
             .padding(32)
             .center_x()
-            .align_y(Align::Start)
+            .align_y(iced::alignment::Vertical::Top)
             .into()
     }
 }
